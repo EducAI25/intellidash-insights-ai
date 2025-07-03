@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -70,12 +70,14 @@ export function AuthForm() {
     <div className="min-h-screen bg-gradient-soft flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-premium">
         <CardHeader className="text-center">
-          <div className="w-12 h-12 bg-gradient-primary rounded-xl mx-auto mb-4 flex items-center justify-center">
-            <Shield className="w-6 h-6 text-white" />
+          <div className="w-16 h-16 bg-gradient-mirtilo rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-mirtilo">
+            <div className="w-8 h-8 bg-white rounded-full relative">
+              <div className="absolute inset-1 bg-gradient-mirtilo rounded-full"></div>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-secondary">IntelliDash</CardTitle>
-          <CardDescription>
-            Transforme seus dados em insights inteligentes
+          <CardTitle className="text-3xl font-bold text-secondary">Mirtilo</CardTitle>
+          <CardDescription className="text-lg">
+            Transforme suas planilhas em dashboards inteligentes
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -109,7 +111,8 @@ export function AuthForm() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-primary hover:opacity-90"
+                  variant="mirtilo"
+                  className="w-full h-12"
                   disabled={isLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -153,7 +156,8 @@ export function AuthForm() {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-gradient-primary hover:opacity-90"
+                  variant="mirtilo"
+                  className="w-full h-12"
                   disabled={isLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

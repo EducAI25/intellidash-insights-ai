@@ -73,8 +73,12 @@ export function UserLayout({ children, activeSection = "Home" }: UserLayoutProps
               </Button>
               
               <div className="flex items-center ml-4 md:ml-0">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg mr-3"></div>
-                <h1 className="text-xl font-bold text-secondary">IntelliDash</h1>
+                <div className="w-10 h-10 bg-gradient-mirtilo rounded-xl mr-3 flex items-center justify-center shadow-mirtilo">
+                  <div className="w-6 h-6 bg-white rounded-full relative">
+                    <div className="absolute inset-1 bg-gradient-mirtilo rounded-full"></div>
+                  </div>
+                </div>
+                <h1 className="text-2xl font-bold text-secondary">Mirtilo</h1>
               </div>
             </div>
 
@@ -92,7 +96,7 @@ export function UserLayout({ children, activeSection = "Home" }: UserLayoutProps
             {/* Right side */}
             <div className="flex items-center space-x-4">
               <Button
-                className="bg-gradient-primary hover:opacity-90 transition-opacity"
+                variant="mirtilo"
                 onClick={() => navigate('/dashboard/upload')}
               >
                 <Upload className="h-4 w-4 mr-2" />

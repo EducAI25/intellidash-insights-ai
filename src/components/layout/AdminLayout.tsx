@@ -76,11 +76,13 @@ export function AdminLayout({ children, activeSection = "Visão Geral" }: AdminL
               </Button>
               
               <div className="flex items-center ml-4 md:ml-0">
-                <div className="w-8 h-8 bg-gradient-dark rounded-lg mr-3 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-white" />
+                <div className="w-10 h-10 bg-gradient-mirtilo rounded-xl mr-3 flex items-center justify-center shadow-mirtilo">
+                  <div className="w-6 h-6 bg-white rounded-full relative">
+                    <div className="absolute inset-1 bg-gradient-mirtilo rounded-full"></div>
+                  </div>
                 </div>
-                <h1 className="text-xl font-bold text-secondary-foreground">
-                  IntelliDash Admin
+                <h1 className="text-2xl font-bold text-secondary-foreground">
+                  Mirtilo Admin
                 </h1>
                 <Badge className="ml-3 bg-red-100 text-red-800 border-red-200">
                   Administrativo
@@ -94,8 +96,10 @@ export function AdminLayout({ children, activeSection = "Visão Geral" }: AdminL
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-red-600 text-white">
-                        <Shield className="h-4 w-4" />
+                      <AvatarFallback className="bg-gradient-mirtilo text-white shadow-mirtilo">
+                        <div className="w-3 h-3 bg-white rounded-full relative">
+                          <div className="absolute inset-0.5 bg-gradient-mirtilo rounded-full"></div>
+                        </div>
                       </AvatarFallback>
                     </Avatar>
                   </Button>
