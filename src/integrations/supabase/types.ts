@@ -9,7 +9,184 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_analyses: {
+        Row: {
+          analysis_type: string
+          confidence_score: number | null
+          content: Json
+          created_at: string
+          dashboard_id: string
+          id: string
+          model_used: string | null
+        }
+        Insert: {
+          analysis_type: string
+          confidence_score?: number | null
+          content: Json
+          created_at?: string
+          dashboard_id: string
+          id?: string
+          model_used?: string | null
+        }
+        Update: {
+          analysis_type?: string
+          confidence_score?: number | null
+          content?: Json
+          created_at?: string
+          dashboard_id?: string
+          id?: string
+          model_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_analyses_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_data: {
+        Row: {
+          column_mappings: Json | null
+          created_at: string
+          dashboard_id: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          original_filename: string
+          processed_data: Json | null
+          raw_data: Json | null
+        }
+        Insert: {
+          column_mappings?: Json | null
+          created_at?: string
+          dashboard_id: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          original_filename: string
+          processed_data?: Json | null
+          raw_data?: Json | null
+        }
+        Update: {
+          column_mappings?: Json | null
+          created_at?: string
+          dashboard_id?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          original_filename?: string
+          processed_data?: Json | null
+          raw_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_data_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboards: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

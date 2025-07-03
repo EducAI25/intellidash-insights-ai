@@ -1,258 +1,238 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import { UserLayout } from "@/components/layout/UserLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileUpload } from "@/components/upload/FileUpload";
+import { DashboardCreator } from "@/components/dashboard/DashboardCreator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Upload, 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  Calendar,
-  MoreVertical,
-  Search,
-  Filter,
-  Eye,
-  Edit,
-  Share,
-  Copy,
-  Trash2
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Upload, BarChart3, Brain, TrendingUp } from "lucide-react";
 
-// Mock data para dashboards
-const mockDashboards = [
-  {
-    id: 1,
-    name: "Vendas Q4 2024",
-    description: "Análise de vendas do último trimestre",
-    thumbnail: "📊",
-    lastUpdated: "2 horas atrás",
-    status: "Ativo",
-    kpis: { revenue: "R$ 1.2M", growth: "+12%", customers: "2.4K" }
-  },
-  {
-    id: 2,
-    name: "Performance Marketing",
-    description: "Métricas de campanhas digitais",
-    thumbnail: "📈",
-    lastUpdated: "1 dia atrás",
-    status: "Ativo",
-    kpis: { cac: "R$ 45", roas: "4.2x", conversions: "892" }
-  },
-  {
-    id: 3,
-    name: "Recursos Humanos",
-    description: "Dashboard de RH e colaboradores",
-    thumbnail: "👥",
-    lastUpdated: "3 dias atrás",
-    status: "Ativo",
-    kpis: { employees: "145", satisfaction: "4.2/5", turnover: "8%" }
-  }
-];
+function DashboardHome() {
+  const [dashboards, setDashboards] = useState([]);
+  const [stats, setStats] = useState({
+    totalDashboards: 0,
+    totalRecords: 0,
+    totalInsights: 0
+  });
+  const { user } = useAuth();
 
-export default function Dashboard() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dashboards] = useState(mockDashboards);
+  useEffect(() => {
+    if (user) {
+      loadDashboards();
+      loadStats();
+    }
+  }, [user]);
 
-  const filteredDashboards = dashboards.filter(dashboard =>
-    dashboard.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    dashboard.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const loadDashboards = async () => {
+    const { data } = await supabase
+      .from('dashboards')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    setDashboards(data || []);
+  };
+
+  const loadStats = async () => {
+    const [dashboardsCount, recordsCount, insightsCount] = await Promise.all([
+      supabase.from('dashboards').select('id', { count: 'exact' }).eq('user_id', user?.id),
+      supabase.from('dashboard_data').select('processed_data', { count: 'exact' }),
+      supabase.from('ai_analyses').select('id', { count: 'exact' })
+    ]);
+
+    setStats({
+      totalDashboards: dashboardsCount.count || 0,
+      totalRecords: recordsCount.count || 0,
+      totalInsights: insightsCount.count || 0
+    });
+  };
 
   return (
-    <UserLayout activeSection="Home">
-      <div className="space-y-8">
-        {/* Welcome Section */}
-        <div className="bg-gradient-primary rounded-3xl p-8 text-white">
-          <div className="max-w-3xl">
-            <h1 className="text-3xl font-bold mb-4">
-              Transforme dados em insights inteligentes
-            </h1>
-            <p className="text-white/90 text-lg mb-6">
-              Bem-vindo ao IntelliDash! Faça upload de suas planilhas e deixe nossa IA criar 
-              dashboards interativos e análises poderosas automaticamente.
-            </p>
-            <div className="flex gap-4">
-              <Button 
-                size="lg" 
-                className="bg-white text-primary hover:bg-white/90"
-              >
-                <Upload className="mr-2 h-5 w-5" />
-                Fazer Upload
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-white text-white hover:bg-white/10"
-              >
-                Ver Tutorial
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="shadow-elegant">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Dashboards Ativos</p>
-                  <p className="text-2xl font-bold">3</p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-elegant">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Insights Gerados</p>
-                  <p className="text-2xl font-bold">47</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="shadow-elegant">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Última Atualização</p>
-                  <p className="text-2xl font-bold">2h</p>
-                </div>
-                <Calendar className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Dashboards Section */}
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Meus Dashboards</h2>
-            <div className="flex gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar dashboards..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtros
-              </Button>
-            </div>
-          </div>
-
-          {/* Dashboard Grid */}
-          {filteredDashboards.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredDashboards.map((dashboard) => (
-                <Card key={dashboard.id} className="shadow-elegant hover:shadow-premium transition-shadow cursor-pointer group">
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-3">
-                        <div className="text-2xl">{dashboard.thumbnail}</div>
-                        <div>
-                          <CardTitle className="text-lg">{dashboard.name}</CardTitle>
-                          <Badge variant="secondary" className="mt-1">
-                            {dashboard.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Share className="mr-2 h-4 w-4" />
-                            Compartilhar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Duplicar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent>
-                    <CardDescription className="mb-4">
-                      {dashboard.description}
-                    </CardDescription>
-                    
-                    {/* KPIs Preview */}
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      {Object.entries(dashboard.kpis).map(([key, value]) => (
-                        <div key={key} className="text-center p-2 bg-muted rounded-lg">
-                          <p className="text-xs text-muted-foreground capitalize">{key}</p>
-                          <p className="font-semibold text-sm">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>Atualizado {dashboard.lastUpdated}</span>
-                      <Button size="sm" className="bg-gradient-primary">
-                        <Eye className="mr-1 h-3 w-3" />
-                        Abrir
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="shadow-elegant">
-              <CardContent className="p-12 text-center">
-                <div className="w-16 h-16 bg-primary-soft rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Upload className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Comece criando seu primeiro dashboard</h3>
-                <p className="text-muted-foreground mb-6">
-                  Faça upload de uma planilha e nossa IA criará automaticamente 
-                  visualizações inteligentes dos seus dados.
-                </p>
-                <Button className="bg-gradient-primary">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Nova Planilha
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-secondary">Dashboard Principal</h1>
+        <p className="text-muted-foreground">
+          Bem-vindo ao seu painel de controle inteligente
+        </p>
       </div>
+
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="shadow-elegant">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-secondary">
+                Dashboards Criados
+              </h3>
+            </div>
+            <p className="text-3xl font-bold text-primary mt-2">{stats.totalDashboards}</p>
+            <p className="text-sm text-muted-foreground">total criados</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-elegant">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-secondary">
+                Dados Processados
+              </h3>
+            </div>
+            <p className="text-3xl font-bold text-primary mt-2">{stats.totalRecords}</p>
+            <p className="text-sm text-muted-foreground">registros</p>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-elegant">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2">
+              <Brain className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold text-secondary">
+                Insights Gerados
+              </h3>
+            </div>
+            <p className="text-3xl font-bold text-primary mt-2">{stats.totalInsights}</p>
+            <p className="text-sm text-muted-foreground">pela IA</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ações Rápidas */}
+      <Card className="shadow-elegant">
+        <CardHeader>
+          <CardTitle>Ações Rápidas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Button 
+              className="p-6 h-auto bg-gradient-primary text-white hover:opacity-90"
+              onClick={() => window.location.href = '/dashboard/upload'}
+            >
+              <div className="flex flex-col items-center space-y-2">
+                <Upload className="h-6 w-6" />
+                <span>Upload de Dados</span>
+              </div>
+            </Button>
+            <Button variant="secondary" className="p-6 h-auto">
+              <div className="flex flex-col items-center space-y-2">
+                <BarChart3 className="h-6 w-6" />
+                <span>Novo Dashboard</span>
+              </div>
+            </Button>
+            <Button variant="outline" className="p-6 h-auto">
+              <div className="flex flex-col items-center space-y-2">
+                <Brain className="h-6 w-6" />
+                <span>Chat com IA</span>
+              </div>
+            </Button>
+            <Button variant="outline" className="p-6 h-auto">
+              <div className="flex flex-col items-center space-y-2">
+                <TrendingUp className="h-6 w-6" />
+                <span>Relatórios</span>
+              </div>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dashboards Recentes */}
+      <Card className="shadow-elegant">
+        <CardHeader>
+          <CardTitle>Dashboards Recentes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {dashboards.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Nenhum dashboard criado ainda. Faça upload dos seus dados para começar!
+                </p>
+                <Button 
+                  className="mt-4 bg-gradient-primary hover:opacity-90"
+                  onClick={() => window.location.href = '/dashboard/upload'}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Fazer Upload
+                </Button>
+              </div>
+            ) : (
+              dashboards.map((dashboard: any) => (
+                <div
+                  key={dashboard.id}
+                  className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                >
+                  <div>
+                    <h3 className="font-medium text-foreground">
+                      {dashboard.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {dashboard.description || 'Sem descrição'}
+                    </p>
+                  </div>
+                  <Button variant="ghost">
+                    Visualizar →
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function UploadPage() {
+  const [uploadedData, setUploadedData] = useState<any[]>([]);
+  const [filename, setFilename] = useState("");
+  const [showCreator, setShowCreator] = useState(false);
+
+  const handleDataProcessed = (data: any[], filename: string) => {
+    setUploadedData(data);
+    setFilename(filename);
+    setShowCreator(true);
+  };
+
+  const handleDashboardCreated = (dashboardId: string) => {
+    // Redirecionar para o dashboard criado
+    window.location.href = `/dashboard/view/${dashboardId}`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-secondary">Upload de Dados</h1>
+        <p className="text-muted-foreground">
+          Faça upload de suas planilhas e transforme dados em insights
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FileUpload onDataProcessed={handleDataProcessed} />
+        
+        {showCreator && (
+          <DashboardCreator 
+            data={uploadedData}
+            filename={filename}
+            onDashboardCreated={handleDashboardCreated}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <UserLayout>
+      <Routes>
+        <Route path="/" element={<DashboardHome />} />
+        <Route path="/upload" element={<UploadPage />} />
+      </Routes>
     </UserLayout>
   );
 }

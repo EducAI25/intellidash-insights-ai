@@ -18,7 +18,7 @@ const Index = () => {
             <h1 className="text-2xl font-bold text-secondary">IntelliDash</h1>
           </div>
           <Button 
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/auth')}
             className="bg-gradient-primary"
           >
             Fazer Login
@@ -41,7 +41,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="bg-gradient-primary h-14 px-8"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/auth')}
             >
               Começar Agora
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -106,7 +106,7 @@ const Index = () => {
           <Button 
             size="lg" 
             className="bg-white text-primary hover:bg-white/90 h-14 px-8"
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/auth')}
           >
             <Zap className="mr-2 h-5 w-5" />
             Começar Gratuitamente
