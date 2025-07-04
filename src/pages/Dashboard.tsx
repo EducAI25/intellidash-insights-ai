@@ -192,14 +192,86 @@ function DashboardHome() {
   );
 }
 
+// Novo componente para mapeamento de colunas e seleção de filtros
+function ColumnMapper({ data, onMap }: { data: any[], onMap: (mappedData: any[], columnMappings: Record<string, string>, filterColumns: string[]) => void }) {
+  const [columnMappings, setColumnMappings] = useState<Record<string, string>>(() => {
+    const cols = Object.keys(data[0] || {});
+    const map: Record<string, string> = {};
+    cols.forEach(col => { map[col] = col; });
+    return map;
+  });
+  const [filterColumns, setFilterColumns] = useState<string[]>([]);
+  const cols = Object.keys(data[0] || {});
+
+  const handleMap = () => {
+    // Renomear colunas nos dados
+    const mappedData = data.map(row => {
+      const newRow: any = {};
+      cols.forEach(col => {
+        newRow[columnMappings[col]] = row[col];
+      });
+      return newRow;
+    });
+    onMap(mappedData, columnMappings, filterColumns);
+  };
+
+  return (
+    <div className="mb-6 p-4 border rounded bg-muted/30">
+      <h3 className="font-semibold mb-2">Mapeamento de Colunas e Filtros</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {cols.map(col => (
+          <div key={col} className="flex flex-col gap-1">
+            <label className="text-xs font-medium">{col}</label>
+            <input
+              className="border rounded px-2 py-1 text-xs"
+              value={columnMappings[col]}
+              onChange={e => setColumnMappings(m => ({ ...m, [col]: e.target.value }))}
+              placeholder="Novo nome da coluna"
+            />
+            <label className="flex items-center gap-2 text-xs mt-1">
+              <input
+                type="checkbox"
+                checked={filterColumns.includes(col)}
+                onChange={e => {
+                  setFilterColumns(f => e.target.checked ? [...f, col] : f.filter(c => c !== col));
+                }}
+              />
+              Usar como filtro
+            </label>
+          </div>
+        ))}
+      </div>
+      <button className="px-4 py-2 bg-primary text-white rounded" onClick={handleMap}>
+        Confirmar Mapeamento
+      </button>
+    </div>
+  );
+}
+
 function UploadPage() {
   const [uploadedData, setUploadedData] = useState<any[]>([]);
   const [filename, setFilename] = useState("");
+  const [uploadId, setUploadId] = useState<string>("");
+  const [showMapper, setShowMapper] = useState(false);
+  const [mappedData, setMappedData] = useState<any[]>([]);
+  const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
+  const [filterColumns, setFilterColumns] = useState<string[]>([]);
   const [showCreator, setShowCreator] = useState(false);
 
-  const handleDataProcessed = (data: any[], filename: string) => {
+  const handleDataProcessed = (data: any[], filename: string, uploadId: string) => {
     setUploadedData(data);
     setFilename(filename);
+    setUploadId(uploadId);
+    setShowMapper(true);
+    setShowCreator(false);
+    console.log('DEBUG: handleDataProcessed uploadId:', uploadId);
+  };
+
+  const handleMap = (mapped: any[], mappings: Record<string, string>, filters: string[]) => {
+    setMappedData(mapped);
+    setColumnMappings(mappings);
+    setFilterColumns(filters);
+    setShowMapper(false);
     setShowCreator(true);
   };
 
@@ -219,11 +291,19 @@ function UploadPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FileUpload onDataProcessed={handleDataProcessed} />
-        
+        {showMapper && (
+          <ColumnMapper
+            data={uploadedData}
+            onMap={handleMap}
+          />
+        )}
         {showCreator && (
           <DashboardCreator 
-            data={uploadedData}
+            data={mappedData}
             filename={filename}
+            uploadId={uploadId}
+            columnMappings={columnMappings}
+            filterColumns={filterColumns}
             onDashboardCreated={handleDashboardCreated}
           />
         )}

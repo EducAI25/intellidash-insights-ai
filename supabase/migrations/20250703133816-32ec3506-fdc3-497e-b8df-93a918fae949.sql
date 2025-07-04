@@ -30,8 +30,11 @@ CREATE TABLE public.dashboard_data (
   raw_data JSONB,
   processed_data JSONB,
   column_mappings JSONB,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  upload_id UUID
 );
+
+CREATE INDEX idx_dashboard_data_upload_id ON public.dashboard_data(upload_id);
 
 -- Criar tabela de análises de IA
 CREATE TABLE public.ai_analyses (

@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
 
 interface FileUploadProps {
-  onDataProcessed: (data: any[], filename: string) => void;
+  onDataProcessed: (data: any[], filename: string, uploadId: string) => void;
 }
 
 export function FileUpload({ onDataProcessed }: FileUploadProps) {
@@ -21,6 +21,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
   const [uploadComplete, setUploadComplete] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [currentUploadId, setCurrentUploadId] = useState<string | null>(null);
 
   const processFile = useCallback(async (file: File) => {
     setUploading(true);
@@ -28,6 +29,11 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
     setUploadComplete(false);
 
     try {
+      // Gerar uploadId ANTES de tudo
+      const uploadId = uuidv4();
+      setCurrentUploadId(uploadId);
+      console.log('DEBUG: uploadId gerado:', uploadId);
+
       // Simular progresso inicial
       setProgress(20);
 
@@ -95,16 +101,19 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       setProgress(80);
 
       // Salvar metadados no banco
+      const dashboardDataObj = {
+        dashboard_id: null, // Será associado quando criar o dashboard
+        original_filename: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+        raw_data: data,
+        processed_data: data,
+        upload_id: uploadId
+      };
       const { error: dbError } = await supabase
         .from('dashboard_data')
-        .insert({
-          dashboard_id: null, // Será associado quando criar o dashboard
-          original_filename: file.name,
-          file_size: file.size,
-          mime_type: file.type,
-          raw_data: data,
-          processed_data: data
-        });
+        .insert(dashboardDataObj);
+      console.log('DEBUG: objeto enviado para dashboard_data:', dashboardDataObj);
 
       if (dbError) {
         throw dbError;
@@ -118,7 +127,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
         description: `${data.length} registros carregados de ${file.name}`,
       });
 
-      onDataProcessed(data, file.name);
+      onDataProcessed(data, file.name, uploadId);
 
     } catch (error: any) {
       console.error('Erro ao processar arquivo:', error);
@@ -132,6 +141,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       setTimeout(() => {
         setProgress(0);
         setUploadComplete(false);
+        setCurrentUploadId(null);
       }, 2000);
     }
   }, [user, toast, onDataProcessed]);

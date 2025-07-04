@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,15 +13,22 @@ import { Table } from '@/components/ui/table';
 interface DashboardCreatorProps {
   data: any[];
   filename: string;
+  uploadId: string;
+  columnMappings: Record<string, string>;
+  filterColumns: string[];
   onDashboardCreated: (dashboardId: string) => void;
 }
 
-export function DashboardCreator({ data, filename, onDashboardCreated }: DashboardCreatorProps) {
+export function DashboardCreator({ data, filename, uploadId, columnMappings, filterColumns, onDashboardCreated }: DashboardCreatorProps) {
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState(filename.replace(/\.[^/.]+$/, ""));
   const [description, setDescription] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    console.log('DEBUG: DashboardCreator uploadId recebido:', uploadId);
+  }, [uploadId]);
 
   const createDashboard = async () => {
     if (!user || !title.trim()) return;
@@ -32,7 +39,7 @@ export function DashboardCreator({ data, filename, onDashboardCreated }: Dashboa
       const { data: dashboard, error: dashboardError } = await supabase
         .from('dashboards')
         .insert({
-          user_id: user.id,
+          user_id: user.id || null,
           title: title.trim(),
           description: description.trim(),
           status: 'draft'
@@ -42,14 +49,29 @@ export function DashboardCreator({ data, filename, onDashboardCreated }: Dashboa
 
       if (dashboardError) throw dashboardError;
 
-      // Atualizar dashboard_data associando ao novo dashboard_id
-      const { error: updateError } = await supabase
+      // Atualizar dashboard_data associando ao novo dashboard_id e salvando mapeamento/filtros
+      console.log('DEBUG: update dashboard_data usando uploadId:', uploadId);
+      const response = await supabase
         .from('dashboard_data')
-        .update({ dashboard_id: dashboard.id })
-        .eq('original_filename', filename)
-        .eq('dashboard_id', null);
+        .update({ 
+          dashboard_id: dashboard.id, 
+          column_mappings: { columnMappings, filterColumns } 
+        })
+        .eq('upload_id', uploadId)
+        .is('dashboard_id', null)
+        .select();
+      const count = response.data?.length || 0;
 
-      if (updateError) throw updateError;
+      if (response.error) throw response.error;
+      if (!count || count === 0) {
+        toast({
+          title: 'Erro ao vincular dados',
+          description: 'Nenhum dado encontrado para associar a este dashboard. Tente fazer upload novamente.',
+          variant: 'destructive',
+        });
+        setCreating(false);
+        return;
+      }
 
       // Gerar análise inicial da IA (chamará edge function)
       const { error: aiError } = await supabase.functions.invoke('generate-ai-insights', {
@@ -64,8 +86,8 @@ export function DashboardCreator({ data, filename, onDashboardCreated }: Dashboa
       }
 
       toast({
-        title: "Dashboard criado com sucesso!",
-        description: "Seus dados foram processados e estão prontos para visualização",
+        title: 'Dashboard criado com sucesso!',
+        description: 'Seus dados foram processados e estão prontos para visualização',
       });
 
       onDashboardCreated(dashboard.id);
@@ -73,9 +95,9 @@ export function DashboardCreator({ data, filename, onDashboardCreated }: Dashboa
     } catch (error: any) {
       console.error('Erro ao criar dashboard:', error);
       toast({
-        title: "Erro ao criar dashboard",
+        title: 'Erro ao criar dashboard',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setCreating(false);
