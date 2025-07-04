@@ -259,15 +259,16 @@ function UploadPage() {
   const [showCreator, setShowCreator] = useState(false);
 
   const handleDataProcessed = (data: any[], filename: string, uploadId: string) => {
+    console.log('DEBUG: handleDataProcessed recebeu uploadId:', uploadId);
     setUploadedData(data);
     setFilename(filename);
     setUploadId(uploadId);
     setShowMapper(true);
     setShowCreator(false);
-    console.log('DEBUG: handleDataProcessed uploadId:', uploadId);
   };
 
   const handleMap = (mapped: any[], mappings: Record<string, string>, filters: string[]) => {
+    console.log('DEBUG: handleMap uploadId atual:', uploadId);
     setMappedData(mapped);
     setColumnMappings(mappings);
     setFilterColumns(filters);

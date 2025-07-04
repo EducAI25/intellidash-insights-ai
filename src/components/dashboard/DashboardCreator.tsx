@@ -27,7 +27,8 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
   const { user } = useAuth();
 
   useEffect(() => {
-    console.log('DEBUG: DashboardCreator uploadId recebido:', uploadId);
+    console.log('DEBUG: DashboardCreator mounted com uploadId:', uploadId);
+    console.log('DEBUG: Props recebidas:', { uploadId, filename, data: data?.length });
   }, [uploadId]);
 
   const createDashboard = async () => {
