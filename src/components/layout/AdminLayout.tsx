@@ -25,6 +25,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -46,14 +47,16 @@ export function AdminLayout({ children, activeSection = "Visão Geral" }: AdminL
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     localStorage.removeItem("user_auth");
     toast({
       title: "Logout administrativo realizado",
       description: "Sessão encerrada com segurança",
     });
-    navigate("/login");
+    navigate("/auth");
   };
 
   const userAuth = JSON.parse(localStorage.getItem("user_auth") || "{}");

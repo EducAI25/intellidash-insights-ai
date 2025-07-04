@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Upload, BarChart3, Brain, TrendingUp } from "lucide-react";
+import Home from "./Home";
+import MyDashboards from "./MyDashboards";
+import History from "./History";
+import Help from "./Help";
+import Settings from "./Settings";
+import DashboardView from "./DashboardView";
 
 function DashboardHome() {
   const [dashboards, setDashboards] = useState([]);
@@ -232,6 +238,12 @@ export default function Dashboard() {
       <Routes>
         <Route path="/" element={<DashboardHome />} />
         <Route path="/upload" element={<UploadPage />} />
+        <Route path="/boards" element={<MyDashboards />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/view/:id" element={<DashboardView />} />
       </Routes>
     </UserLayout>
   );

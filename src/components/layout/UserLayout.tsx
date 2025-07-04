@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface UserLayoutProps {
   children: ReactNode;
@@ -43,14 +44,16 @@ export function UserLayout({ children, activeSection = "Home" }: UserLayoutProps
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     localStorage.removeItem("user_auth");
     toast({
       title: "Logout realizado",
       description: "Até a próxima!",
     });
-    navigate("/login");
+    navigate("/auth");
   };
 
   const userAuth = JSON.parse(localStorage.getItem("user_auth") || "{}");
@@ -151,14 +154,14 @@ export function UserLayout({ children, activeSection = "Home" }: UserLayoutProps
 
       <div className="flex">
         {/* Sidebar */}
-        <nav className={`${
-          sidebarOpen ? 'block' : 'hidden'
-        } md:block w-64 bg-sidebar text-sidebar-foreground min-h-screen`}>
+        <nav className={`
+          ${sidebarOpen ? 'block' : 'hidden'}
+          md:block w-64 bg-sidebar text-sidebar-foreground min-h-screen
+        `}>
           <div className="p-6 space-y-1">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = activeSection === item.name;
-              
               return (
                 <Button
                   key={item.name}
@@ -177,7 +180,6 @@ export function UserLayout({ children, activeSection = "Home" }: UserLayoutProps
             })}
           </div>
         </nav>
-
         {/* Main content */}
         <main className="flex-1 p-6">
           {children}

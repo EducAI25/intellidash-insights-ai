@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { v4 as uuidv4 } from 'uuid';
 
 interface FileUploadProps {
   onDataProcessed: (data: any[], filename: string) => void;
@@ -31,33 +32,32 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       setProgress(20);
 
       let data: any[] = [];
+      let valid = false;
+      let errorMsg = '';
       
       if (file.name.endsWith('.csv')) {
         // Processar CSV
         const text = await file.text();
         setProgress(40);
-        
         const result = Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
           transformHeader: (header) => header.trim()
         });
-        
         data = result.data;
+        valid = Array.isArray(data) && data.length > 0;
+        if (!valid) errorMsg = 'O arquivo CSV está vazio ou inválido.';
       } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         // Processar Excel
         const arrayBuffer = await file.arrayBuffer();
         setProgress(40);
-        
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        
         data = XLSX.utils.sheet_to_json(worksheet, {
           header: 1,
           defval: ''
         });
-        
         // Converter para formato objeto usando primeira linha como headers
         if (data.length > 1) {
           const headers = data[0] as string[];
@@ -69,15 +69,24 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
             return obj;
           });
         }
+        valid = Array.isArray(data) && data.length > 0;
+        if (!valid) errorMsg = 'A planilha está vazia ou inválida.';
+      } else {
+        errorMsg = 'Formato de arquivo não suportado.';
+      }
+
+      if (!valid) {
+        throw new Error(errorMsg);
       }
 
       setProgress(60);
 
       // Upload para Supabase Storage
-      const fileName = `${user?.id}/${Date.now()}-${file.name}`;
+      const uniqueId = uuidv4();
+      const fileName = `${user?.id}/${uniqueId}-${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('dashboard-files')
-        .upload(fileName, file);
+        .upload(fileName, file, { upsert: false });
 
       if (uploadError) {
         throw uploadError;
