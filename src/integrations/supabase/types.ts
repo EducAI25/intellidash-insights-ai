@@ -87,35 +87,38 @@ export type Database = {
         Row: {
           column_mappings: Json | null
           created_at: string
-          dashboard_id: string
+          dashboard_id: string | null
           file_size: number | null
           id: string
           mime_type: string | null
           original_filename: string
           processed_data: Json | null
           raw_data: Json | null
+          upload_id: string | null
         }
         Insert: {
           column_mappings?: Json | null
           created_at?: string
-          dashboard_id: string
+          dashboard_id?: string | null
           file_size?: number | null
           id?: string
           mime_type?: string | null
           original_filename: string
           processed_data?: Json | null
           raw_data?: Json | null
+          upload_id?: string | null
         }
         Update: {
           column_mappings?: Json | null
           created_at?: string
-          dashboard_id?: string
+          dashboard_id?: string | null
           file_size?: number | null
           id?: string
           mime_type?: string | null
           original_filename?: string
           processed_data?: Json | null
           raw_data?: Json | null
+          upload_id?: string | null
         }
         Relationships: [
           {

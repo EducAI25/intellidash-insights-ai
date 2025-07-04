@@ -35,6 +35,28 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
 
     setCreating(true);
     try {
+      console.log('DEBUG: Iniciando criação de dashboard com uploadId:', uploadId);
+      
+      // Verificar se existem dados para este uploadId antes de criar dashboard
+      const { data: existingData, error: checkError } = await supabase
+        .from('dashboard_data')
+        .select('id')
+        .eq('upload_id', uploadId)
+        .is('dashboard_id', null);
+      
+      if (checkError) throw checkError;
+      if (!existingData || existingData.length === 0) {
+        toast({
+          title: 'Erro ao vincular dados',
+          description: 'Dados do upload não encontrados. Faça upload novamente.',
+          variant: 'destructive',
+        });
+        setCreating(false);
+        return;
+      }
+
+      console.log('DEBUG: Dados encontrados:', existingData.length, 'registros');
+
       // Criar dashboard
       const { data: dashboard, error: dashboardError } = await supabase
         .from('dashboards')
@@ -48,10 +70,10 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
         .single();
 
       if (dashboardError) throw dashboardError;
+      console.log('DEBUG: Dashboard criado com ID:', dashboard.id);
 
-      // Atualizar dashboard_data associando ao novo dashboard_id e salvando mapeamento/filtros
-      console.log('DEBUG: update dashboard_data usando uploadId:', uploadId);
-      const response = await supabase
+      // Atualizar dashboard_data associando ao novo dashboard_id
+      const { data: updatedData, error: updateError } = await supabase
         .from('dashboard_data')
         .update({ 
           dashboard_id: dashboard.id, 
@@ -60,13 +82,16 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
         .eq('upload_id', uploadId)
         .is('dashboard_id', null)
         .select();
-      const count = response.data?.length || 0;
 
-      if (response.error) throw response.error;
-      if (!count || count === 0) {
+      if (updateError) throw updateError;
+      
+      const updateCount = updatedData?.length || 0;
+      console.log('DEBUG: Registros atualizados:', updateCount);
+      
+      if (updateCount === 0) {
         toast({
           title: 'Erro ao vincular dados',
-          description: 'Nenhum dado encontrado para associar a este dashboard. Tente fazer upload novamente.',
+          description: 'Não foi possível associar os dados ao dashboard. Tente novamente.',
           variant: 'destructive',
         });
         setCreating(false);
