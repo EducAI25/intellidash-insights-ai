@@ -323,6 +323,7 @@ export default function Dashboard() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/home" element={<Home />} />
         <Route path="/view/:id" element={<DashboardView />} />
+        <Route path="/edit/:id" element={<UploadPage />} />
       </Routes>
     </UserLayout>
   );

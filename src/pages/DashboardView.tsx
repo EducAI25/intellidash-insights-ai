@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, BarChart3, Brain, Copy, Filter, TrendingUp, Pencil, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, BarChart3, Brain, Copy, Filter, TrendingUp, Pencil, Check, X, Settings, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { toast } from '@/hooks/use-toast';
 
 export default function DashboardView() {
   const { id } = useParams();
@@ -185,25 +187,75 @@ export default function DashboardView() {
   }
 
   return (
-    <div className="p-8 space-y-6">
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            {dashboard.title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-2">{dashboard.description}</p>
-          <div className="text-xs text-muted-foreground mb-2">ID: {dashboard.id}</div>
-        </CardContent>
-      </Card>
+    <div className="p-6 space-y-6">
+      {/* Header do Dashboard */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/boards')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-primary" />
+              {dashboard.title}
+            </h1>
+            <p className="text-muted-foreground">{dashboard.description}</p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={() => navigate(`/dashboard/edit/${id}`)}>
+          <Settings className="h-4 w-4 mr-2" />
+          Editar Dashboard
+        </Button>
+      </div>
+
+      {/* Filtros Dinâmicos */}
+      {filterColumns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-primary" />
+              Filtros
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filterColumns.map(col => (
+                <div key={col} className="space-y-2">
+                  <label className="text-sm font-medium">{columnMappings[col] || col}</label>
+                  <Input
+                    type="text"
+                    placeholder={`Filtrar por ${columnMappings[col] || col}...`}
+                    value={filters[col] || ''}
+                    onChange={e => setFilters(prev => ({ ...prev, [col]: e.target.value }))}
+                    className="w-full"
+                  />
+                </div>
+              ))}
+            </div>
+            {Object.values(filters).some(f => f) && (
+              <div className="mt-4 flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Mostrando {filteredData.length} de {data.length} registros
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setFilters({})}
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            Preview dos Dados
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Dados & Estatísticas
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -223,7 +275,7 @@ export default function DashboardView() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {statCols.map(col => (
                           <div key={col} className="text-xs">
-                            <div className="font-semibold text-primary">{col}</div>
+                            <div className="font-semibold text-primary">{columnMappings[col] || col}</div>
                             <div>Min: {stats[col].min.toFixed(2)}</div>
                             <div>Max: {stats[col].max.toFixed(2)}</div>
                             <div>Média: {stats[col].avg.toFixed(2)}</div>
@@ -236,73 +288,32 @@ export default function DashboardView() {
                 return null;
               })()}
 
-              {/* Filtros apenas para colunas selecionadas */}
-              <div className="mb-4 p-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Filter className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold">Filtros</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {origCols.map(col => (
-                    <div key={col} className="flex items-center gap-2 mb-1">
-                      <input
-                        type="checkbox"
-                        checked={filterColumns.includes(col)}
-                        onChange={e => {
-                          const newFilters = e.target.checked
-                            ? [...filterColumns, col]
-                            : filterColumns.filter(f => f !== col);
-                          saveColumnSettings(columnMappings, newFilters);
-                        }}
-                        className="mr-1"
-                        title="Marque para usar esta coluna como filtro no dashboard"
-                      />
-                      {editingCol === col ? (
-                        <>
-                          <input
-                            className="border rounded px-1 text-xs mr-1"
-                            value={tempColName}
-                            onChange={e => setTempColName(e.target.value)}
-                            autoFocus
-                          />
-                          <button onClick={() => {
-                            const newMappings = { ...columnMappings, [col]: tempColName };
-                            saveColumnSettings(newMappings, filterColumns);
-                            setEditingCol(null);
-                          }} title="Salvar novo nome da coluna"><Check className="w-4 h-4 text-green-600" /></button>
-                          <button onClick={() => setEditingCol(null)} title="Cancelar edição"><X className="w-4 h-4 text-red-600" /></button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-xs font-medium">{columnMappings[col] || col}</span>
-                          <button onClick={() => { setEditingCol(col); setTempColName(columnMappings[col] || col); }} title="Editar nome da coluna">
-                            <Pencil className="w-3 h-3 text-muted-foreground ml-1" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {saving && <div className="text-xs text-muted-foreground mt-2">Salvando...</div>}
-                {successMsg && <div className="text-xs text-green-600 mt-2">{successMsg}</div>}
-              </div>
-              <div className="flex gap-2 mb-2">
+              <div className="flex gap-2 mb-4">
                 <Button size="sm" variant="outline" onClick={exportToCSV}>
                   Exportar CSV
                 </Button>
-                <Button size="sm" variant="outline" onClick={copyTable}>
-                  <Copy className="w-4 h-4 mr-1 inline" /> Copiar tabela
+                <Button size="sm" variant="outline" onClick={() => {
+                  copyTable();
+                  toast({
+                    title: "Dados copiados!",
+                    description: "Os primeiros 10 registros foram copiados para a área de transferência.",
+                  });
+                }}>
+                  <Copy className="w-4 h-4 mr-1 inline" /> Copiar Dados
                 </Button>
                 <span className="text-xs text-muted-foreground self-center">
                   {filteredData.length} de {data.length} registros
                 </span>
               </div>
+
               <div className="overflow-x-auto rounded border bg-white">
                 <table className="min-w-full text-xs">
                   <thead>
                     <tr>
                       {origCols.map((col) => (
-                        <th key={col} className="px-2 py-1 border-b font-semibold text-left bg-muted">{columnMappings[col] || col}</th>
+                        <th key={col} className="px-2 py-1 border-b font-semibold text-left bg-muted">
+                          {columnMappings[col] || col}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -317,12 +328,24 @@ export default function DashboardView() {
                   </tbody>
                 </table>
                 {filteredData.length > 10 && (
-                  <div className="text-xs text-muted-foreground p-2">...e mais {filteredData.length - 10} linhas</div>
+                  <div className="text-xs text-muted-foreground p-2">
+                    ...e mais {filteredData.length - 10} linhas
+                  </div>
                 )}
               </div>
             </>
           ) : (
-            <span className="text-muted-foreground">Nenhum dado encontrado para este dashboard.</span>
+            <div className="text-center py-8">
+              <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhum dado encontrado para este dashboard.</p>
+              <Button 
+                variant="outline" 
+                className="mt-4" 
+                onClick={() => navigate(`/dashboard/edit/${id}`)}
+              >
+                Configurar Dados
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
