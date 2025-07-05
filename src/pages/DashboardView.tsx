@@ -6,6 +6,9 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DynamicFilters } from '@/components/dashboard/DynamicFilters';
 import { DataStatsTable } from '@/components/dashboard/DataStatsTable';
 import { ChartSection } from '@/components/dashboard/ChartSection';
+import { KPICards } from '@/components/dashboard/KPICards';
+import { ModernCharts } from '@/components/dashboard/ModernCharts';
+import { InsightsPanel } from '@/components/dashboard/InsightsPanel';
 
 export default function DashboardView() {
   const { id } = useParams();
@@ -175,37 +178,45 @@ export default function DashboardView() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <DashboardHeader dashboard={dashboard} />
-      
-      <DynamicFilters
-        filterColumns={filterColumns}
-        columnMappings={columnMappings}
-        filters={filters}
-        setFilters={setFilters}
-        totalData={data.length}
-        filteredData={filteredData.length}
-      />
+    <div className="min-h-screen bg-gradient-soft">
+      <div className="p-6 space-y-6">
+        <DashboardHeader dashboard={dashboard} />
+        
+        <KPICards data={filteredData} />
+        
+        <ModernCharts data={filteredData} />
+        
+        <InsightsPanel data={filteredData} />
+        
+        <DynamicFilters
+          filterColumns={filterColumns}
+          columnMappings={columnMappings}
+          filters={filters}
+          setFilters={setFilters}
+          totalData={data.length}
+          filteredData={filteredData.length}
+        />
 
-      <DataStatsTable
-        data={data}
-        filteredData={filteredData}
-        columnMappings={columnMappings}
-        origCols={origCols}
-        getStats={getStats}
-        exportToCSV={exportToCSV}
-        copyTable={copyTable}
-        dashboardId={id || ''}
-      />
+        <DataStatsTable
+          data={data}
+          filteredData={filteredData}
+          columnMappings={columnMappings}
+          origCols={origCols}
+          getStats={getStats}
+          exportToCSV={exportToCSV}
+          copyTable={copyTable}
+          dashboardId={id || ''}
+        />
 
-      <ChartSection
-        data={data}
-        filteredData={filteredData}
-        selectedLabelCol={selectedLabelCol}
-        selectedNumericCols={selectedNumericCols}
-        setSelectedLabelCol={setSelectedLabelCol}
-        setSelectedNumericCols={setSelectedNumericCols}
-      />
+        <ChartSection
+          data={data}
+          filteredData={filteredData}
+          selectedLabelCol={selectedLabelCol}
+          selectedNumericCols={selectedNumericCols}
+          setSelectedLabelCol={setSelectedLabelCol}
+          setSelectedNumericCols={setSelectedNumericCols}
+        />
+      </div>
     </div>
   );
 }
