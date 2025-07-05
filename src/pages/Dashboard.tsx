@@ -192,7 +192,6 @@ function DashboardHome() {
   );
 }
 
-// Novo componente para mapeamento de colunas e seleção de filtros
 function ColumnMapper({ data, onMap }: { data: any[], onMap: (mappedData: any[], columnMappings: Record<string, string>, filterColumns: string[]) => void }) {
   const [columnMappings, setColumnMappings] = useState<Record<string, string>>(() => {
     const cols = Object.keys(data[0] || {});
@@ -204,7 +203,6 @@ function ColumnMapper({ data, onMap }: { data: any[], onMap: (mappedData: any[],
   const cols = Object.keys(data[0] || {});
 
   const handleMap = () => {
-    // Renomear colunas nos dados
     const mappedData = data.map(row => {
       const newRow: any = {};
       cols.forEach(col => {
@@ -259,7 +257,7 @@ function UploadPage() {
   const [showCreator, setShowCreator] = useState(false);
 
   const handleDataProcessed = (data: any[], filename: string, uploadId: string) => {
-    console.log('DEBUG: handleDataProcessed recebeu uploadId:', uploadId);
+    console.log('Dados processados:', { uploadId, filename, records: data.length });
     setUploadedData(data);
     setFilename(filename);
     setUploadId(uploadId);
@@ -268,7 +266,7 @@ function UploadPage() {
   };
 
   const handleMap = (mapped: any[], mappings: Record<string, string>, filters: string[]) => {
-    console.log('DEBUG: handleMap uploadId atual:', uploadId);
+    console.log('Mapeamento confirmado:', { uploadId, mappings, filters });
     setMappedData(mapped);
     setColumnMappings(mappings);
     setFilterColumns(filters);
@@ -277,7 +275,7 @@ function UploadPage() {
   };
 
   const handleDashboardCreated = (dashboardId: string) => {
-    // Redirecionar para o dashboard criado
+    console.log('Dashboard criado:', dashboardId);
     window.location.href = `/dashboard/view/${dashboardId}`;
   };
 

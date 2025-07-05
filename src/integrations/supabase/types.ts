@@ -95,6 +95,7 @@ export type Database = {
           processed_data: Json | null
           raw_data: Json | null
           upload_id: string | null
+          user_id: string | null
         }
         Insert: {
           column_mappings?: Json | null
@@ -107,6 +108,7 @@ export type Database = {
           processed_data?: Json | null
           raw_data?: Json | null
           upload_id?: string | null
+          user_id?: string | null
         }
         Update: {
           column_mappings?: Json | null
@@ -119,6 +121,7 @@ export type Database = {
           processed_data?: Json | null
           raw_data?: Json | null
           upload_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

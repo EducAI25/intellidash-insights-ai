@@ -21,20 +21,25 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
   const [uploadComplete, setUploadComplete] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [currentUploadId, setCurrentUploadId] = useState<string | null>(null);
 
   const processFile = useCallback(async (file: File) => {
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para fazer upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
     setUploadComplete(false);
 
     try {
-      // Gerar uploadId ANTES de tudo
       const uploadId = uuidv4();
-      setCurrentUploadId(uploadId);
-      console.log('DEBUG: uploadId gerado:', uploadId);
+      console.log('Upload iniciado:', { uploadId, filename: file.name, userId: user.id });
 
-      // Simular progresso inicial
       setProgress(20);
 
       let data: any[] = [];
@@ -42,7 +47,6 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       let errorMsg = '';
       
       if (file.name.endsWith('.csv')) {
-        // Processar CSV
         const text = await file.text();
         setProgress(40);
         const result = Papa.parse(text, {
@@ -54,7 +58,6 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
         valid = Array.isArray(data) && data.length > 0;
         if (!valid) errorMsg = 'O arquivo CSV está vazio ou inválido.';
       } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        // Processar Excel
         const arrayBuffer = await file.arrayBuffer();
         setProgress(40);
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
@@ -64,7 +67,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
           header: 1,
           defval: ''
         });
-        // Converter para formato objeto usando primeira linha como headers
+        
         if (data.length > 1) {
           const headers = data[0] as string[];
           data = data.slice(1).map(row => {
@@ -89,7 +92,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
 
       // Upload para Supabase Storage
       const uniqueId = uuidv4();
-      const fileName = `${user?.id}/${uniqueId}-${file.name}`;
+      const fileName = `${user.id}/${uniqueId}-${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('dashboard-files')
         .upload(fileName, file, { upsert: false });
@@ -100,9 +103,10 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
 
       setProgress(80);
 
-      // Salvar metadados no banco
+      // Salvar metadados no banco com user_id
       const dashboardDataObj = {
-        dashboard_id: null, // Será associado quando criar o dashboard
+        user_id: user.id,
+        dashboard_id: null,
         original_filename: file.name,
         file_size: file.size,
         mime_type: file.type,
@@ -110,12 +114,15 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
         processed_data: data,
         upload_id: uploadId
       };
+
+      console.log('Salvando dados no banco:', { uploadId, userId: user.id, filename: file.name });
+      
       const { error: dbError } = await supabase
         .from('dashboard_data')
         .insert(dashboardDataObj);
-      console.log('DEBUG: objeto enviado para dashboard_data:', dashboardDataObj);
 
       if (dbError) {
+        console.error('Erro ao salvar no banco:', dbError);
         throw dbError;
       }
 
@@ -141,7 +148,6 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       setTimeout(() => {
         setProgress(0);
         setUploadComplete(false);
-        setCurrentUploadId(null);
       }, 2000);
     }
   }, [user, toast, onDataProcessed]);
