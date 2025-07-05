@@ -39,14 +39,30 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
       console.log('DEBUG: Iniciando criação de dashboard com uploadId:', uploadId);
       
       // Verificar se existem dados para este uploadId antes de criar dashboard
+      console.log('DEBUG: Buscando dados com uploadId:', uploadId);
       const { data: existingData, error: checkError } = await supabase
         .from('dashboard_data')
-        .select('id')
-        .eq('upload_id', uploadId)
-        .is('dashboard_id', null);
+        .select('*')
+        .eq('upload_id', uploadId);
       
-      if (checkError) throw checkError;
+      console.log('DEBUG: Resultado busca:', { existingData, checkError });
+      
+      if (checkError) {
+        console.error('DEBUG: Erro na busca:', checkError);
+        throw checkError;
+      }
+      
       if (!existingData || existingData.length === 0) {
+        console.log('DEBUG: Nenhum dado encontrado para uploadId:', uploadId);
+        
+        // Buscar todos os registros para debug
+        const { data: allData } = await supabase
+          .from('dashboard_data')
+          .select('upload_id, dashboard_id, original_filename')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        console.log('DEBUG: Últimos 10 registros na tabela:', allData);
+        
         toast({
           title: 'Erro ao vincular dados',
           description: 'Dados do upload não encontrados. Faça upload novamente.',
@@ -74,6 +90,7 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
       console.log('DEBUG: Dashboard criado com ID:', dashboard.id);
 
       // Atualizar dashboard_data associando ao novo dashboard_id
+      console.log('DEBUG: Atualizando registros com uploadId:', uploadId);
       const { data: updatedData, error: updateError } = await supabase
         .from('dashboard_data')
         .update({ 
@@ -81,8 +98,9 @@ export function DashboardCreator({ data, filename, uploadId, columnMappings, fil
           column_mappings: { columnMappings, filterColumns } 
         })
         .eq('upload_id', uploadId)
-        .is('dashboard_id', null)
         .select();
+      
+      console.log('DEBUG: Resultado atualização:', { updatedData, updateError });
 
       if (updateError) throw updateError;
       
