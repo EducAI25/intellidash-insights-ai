@@ -2,6 +2,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GeminiConfig } from "@/components/admin/GeminiConfig";
 import { 
   Users, 
   TrendingUp, 

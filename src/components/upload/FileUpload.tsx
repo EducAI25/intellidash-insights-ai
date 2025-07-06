@@ -11,8 +11,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { v4 as uuidv4 } from 'uuid';
 
+interface Sheet {
+  name: string;
+  data: any[];
+  preview: string[];
+}
+
 interface FileUploadProps {
-  onDataProcessed: (data: any[], filename: string, uploadId: string) => void;
+  onDataProcessed: (data: any[], filename: string, uploadId: string, sheets?: Sheet[]) => void;
 }
 
 export function FileUpload({ onDataProcessed }: FileUploadProps) {
@@ -43,6 +49,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       setProgress(20);
 
       let data: any[] = [];
+      let sheets: Sheet[] = [];
       let valid = false;
       let errorMsg = '';
       
@@ -61,25 +68,45 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
         const arrayBuffer = await file.arrayBuffer();
         setProgress(40);
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        data = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: ''
-        });
         
-        if (data.length > 1) {
-          const headers = data[0] as string[];
-          data = data.slice(1).map(row => {
-            const obj: any = {};
-            headers.forEach((header, index) => {
-              obj[header] = (row as any[])[index] || '';
-            });
-            return obj;
+        // Processar todas as abas
+        sheets = workbook.SheetNames.map(sheetName => {
+          const worksheet = workbook.Sheets[sheetName];
+          let sheetData = XLSX.utils.sheet_to_json(worksheet, {
+            header: 1,
+            defval: ''
           });
+          
+          if (sheetData.length > 1) {
+            const headers = sheetData[0] as string[];
+            const processedData = sheetData.slice(1).map(row => {
+              const obj: any = {};
+              headers.forEach((header, index) => {
+                obj[header] = (row as any[])[index] || '';
+              });
+              return obj;
+            });
+            
+            return {
+              name: sheetName,
+              data: processedData,
+              preview: headers.slice(0, 5)
+            };
+          }
+          return {
+            name: sheetName,
+            data: [],
+            preview: []
+          };
+        }).filter(sheet => sheet.data.length > 0);
+        
+        // Usar primeira aba como padrão
+        if (sheets.length > 0) {
+          data = sheets[0].data;
+          valid = true;
+        } else {
+          errorMsg = 'A planilha está vazia ou inválida.';
         }
-        valid = Array.isArray(data) && data.length > 0;
-        if (!valid) errorMsg = 'A planilha está vazia ou inválida.';
       } else {
         errorMsg = 'Formato de arquivo não suportado.';
       }
@@ -134,7 +161,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
         description: `${data.length} registros carregados de ${file.name}`,
       });
 
-      onDataProcessed(data, file.name, uploadId);
+      onDataProcessed(data, file.name, uploadId, sheets.length > 1 ? sheets : undefined);
 
     } catch (error: any) {
       console.error('Erro ao processar arquivo:', error);

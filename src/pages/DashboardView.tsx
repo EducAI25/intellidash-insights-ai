@@ -9,6 +9,10 @@ import { ChartSection } from '@/components/dashboard/ChartSection';
 import { KPICards } from '@/components/dashboard/KPICards';
 import { ModernCharts } from '@/components/dashboard/ModernCharts';
 import { InsightsPanel } from '@/components/dashboard/InsightsPanel';
+import { SheetSelector } from '@/components/dashboard/SheetSelector';
+import { ExportControls } from '@/components/dashboard/ExportControls';
+import { AIChat } from '@/components/dashboard/AIChat';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function DashboardView() {
   const { id } = useParams();
@@ -21,6 +25,8 @@ export default function DashboardView() {
   const [selectedNumericCols, setSelectedNumericCols] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [availableSheets, setAvailableSheets] = useState<any[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
 
   // Aplicar filtros aos dados
   useEffect(() => {
@@ -179,8 +185,20 @@ export default function DashboardView() {
 
   return (
     <div className="min-h-screen bg-gradient-soft">
-      <div className="p-6 space-y-6">
-        <DashboardHeader dashboard={dashboard} />
+      <div className="p-6 space-y-6" id="dashboard-content">
+        <div className="flex items-center justify-between">
+          <DashboardHeader dashboard={dashboard} />
+          <div className="flex gap-2">
+            <ThemeToggle />
+            <ExportControls dashboardTitle={dashboard?.title || ''} />
+          </div>
+        </div>
+        
+        <SheetSelector 
+          sheets={availableSheets}
+          selectedSheet={selectedSheet}
+          onSheetSelect={setSelectedSheet}
+        />
         
         <KPICards data={filteredData} />
         
@@ -217,6 +235,8 @@ export default function DashboardView() {
           setSelectedNumericCols={setSelectedNumericCols}
         />
       </div>
+      
+      <AIChat data={filteredData} dashboardTitle={dashboard?.title || 'Dashboard'} />
     </div>
   );
 }
