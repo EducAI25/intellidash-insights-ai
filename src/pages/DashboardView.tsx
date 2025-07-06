@@ -46,26 +46,55 @@ export default function DashboardView() {
     setFilteredData(filtered);
   }, [data, filters]);
 
-  // Calcular estatísticas dos dados numéricos
+  // Calcular estatísticas precisas dos dados numéricos
   const getStats = () => {
     if (!filteredData || filteredData.length === 0) return {};
     
-    const numericCols = Object.keys(filteredData[0]).filter(col =>
-      filteredData.every(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
-    );
+    // Detectar colunas verdadeiramente numéricas, excluindo IDs e códigos
+    const numericCols = Object.keys(filteredData[0]).filter(col => {
+      const colLower = col.toLowerCase();
+      
+      // Excluir colunas que são claramente IDs ou códigos
+      if (colLower.includes('id') || colLower.includes('codigo') || colLower.includes('code')) {
+        return false;
+      }
+      
+      // Verificar se pelo menos 80% dos valores são números válidos
+      const numericValues = filteredData.map(row => Number(row[col])).filter(v => !isNaN(v) && v !== null);
+      return numericValues.length >= filteredData.length * 0.8;
+    });
     
     const stats: Record<string, any> = {};
+    
     numericCols.forEach(col => {
-      const values = filteredData.map(row => Number(row[col])).filter(v => !isNaN(v));
+      const values = filteredData
+        .map(row => Number(row[col]))
+        .filter(v => !isNaN(v) && v !== null && isFinite(v));
+      
       if (values.length > 0) {
+        // Remover outliers extremos (valores muito fora do padrão)
+        const sorted = [...values].sort((a, b) => a - b);
+        const q1 = sorted[Math.floor(sorted.length * 0.25)];
+        const q3 = sorted[Math.floor(sorted.length * 0.75)];
+        const iqr = q3 - q1;
+        const lowerBound = q1 - 1.5 * iqr;
+        const upperBound = q3 + 1.5 * iqr;
+        
+        const cleanValues = values.filter(v => v >= lowerBound && v <= upperBound);
+        const sum = cleanValues.reduce((a, b) => a + b, 0);
+        
         stats[col] = {
-          min: Math.min(...values),
-          max: Math.max(...values),
-          avg: values.reduce((a, b) => a + b, 0) / values.length,
-          count: values.length
+          min: Math.min(...cleanValues),
+          max: Math.max(...cleanValues),
+          avg: sum / cleanValues.length,
+          sum: sum,
+          count: cleanValues.length,
+          median: sorted[Math.floor(sorted.length / 2)],
+          outliers: values.length - cleanValues.length
         };
       }
     });
+    
     return stats;
   };
 
@@ -122,15 +151,34 @@ export default function DashboardView() {
     fetchDashboard();
   }, [id]);
 
-  // Atualizar seleção padrão quando os dados mudam
+  // Atualizar seleção inteligente quando os dados mudam
   useEffect(() => {
     if (data && data.length > 0) {
       const cols = Object.keys(data[0]);
-      const numericCols = cols.filter(col =>
-        data.slice(0, 10).every(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
-      );
-      setSelectedLabelCol(cols[0]);
-      setSelectedNumericCols(numericCols);
+      
+      // Detectar coluna de label mais apropriada
+      const labelCol = cols.find(col => {
+        const lower = col.toLowerCase();
+        return lower.includes('nome') || lower.includes('name') || 
+               lower.includes('produto') || lower.includes('product') ||
+               lower.includes('descrição') || lower.includes('description');
+      }) || cols[0];
+      
+      // Detectar colunas numéricas válidas (excluindo IDs)
+      const numericCols = cols.filter(col => {
+        const colLower = col.toLowerCase();
+        if (colLower.includes('id') || colLower.includes('codigo')) return false;
+        
+        // Verificar se é numerico em pelo menos 80% dos casos
+        const numericCount = data.slice(0, Math.min(20, data.length))
+          .filter(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
+          .length;
+        
+        return numericCount >= Math.min(20, data.length) * 0.8;
+      });
+      
+      setSelectedLabelCol(labelCol);
+      setSelectedNumericCols(numericCols.slice(0, 5)); // Limitar a 5 colunas para performance
     }
   }, [data]);
 

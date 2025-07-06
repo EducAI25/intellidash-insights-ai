@@ -74,14 +74,39 @@ export function DataStatsTable({
               <span className="text-sm font-semibold">Estatísticas Rápidas</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {statCols.map(col => (
-                <div key={col} className="text-xs">
-                  <div className="font-semibold text-primary">{columnMappings[col] || col}</div>
-                  <div>Min: {stats[col].min.toFixed(2)}</div>
-                  <div>Max: {stats[col].max.toFixed(2)}</div>
-                  <div>Média: {stats[col].avg.toFixed(2)}</div>
-                </div>
-              ))}
+              {statCols.map(col => {
+                const stat = stats[col];
+                const isLargeNumber = stat.avg > 1000;
+                const isCurrency = col.toLowerCase().includes('valor') || col.toLowerCase().includes('preço') || col.toLowerCase().includes('price');
+                
+                const formatNumber = (num: number) => {
+                  if (isCurrency) {
+                    return num.toLocaleString('pt-BR', { 
+                      style: 'currency', 
+                      currency: 'BRL',
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    });
+                  }
+                  if (isLargeNumber) {
+                    return num.toLocaleString('pt-BR', { 
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0
+                    });
+                  }
+                  return num.toFixed(2);
+                };
+
+                return (
+                  <div key={col} className="text-xs">
+                    <div className="font-semibold text-primary">{columnMappings[col] || col}</div>
+                    <div>Min: {formatNumber(stat.min)}</div>
+                    <div>Max: {formatNumber(stat.max)}</div>
+                    <div>Média: {formatNumber(stat.avg)}</div>
+                    <div className="text-muted-foreground">Total: {stat.sum ? formatNumber(stat.sum) : 'N/A'}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
