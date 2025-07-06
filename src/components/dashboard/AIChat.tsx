@@ -15,6 +15,7 @@ import {
   Brain
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -64,60 +65,45 @@ export function AIChat({ data, dashboardTitle }: AIChatProps) {
   };
 
   const generateResponse = async (userMessage: string) => {
-    // Simulação de resposta inteligente baseada nos dados
-    const context = analyzeDataForContext();
-    
-    // Respostas baseadas em palavras-chave
-    if (userMessage.toLowerCase().includes('total') || userMessage.toLowerCase().includes('soma')) {
-      const numericColumns = Object.keys(data[0] || {}).filter(col => 
-        data.slice(0, 10).every(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
-      );
-      
-      if (numericColumns.length > 0) {
-        const totals = numericColumns.map(col => {
-          const sum = data.reduce((acc, row) => acc + (Number(row[col]) || 0), 0);
-          return `${col}: ${sum.toLocaleString('pt-BR')}`;
-        });
-        return `Totais calculados:\n${totals.join('\n')}`;
+    try {
+      const { data: response, error } = await supabase.functions.invoke('gemini-chat', {
+        body: { 
+          message: userMessage, 
+          data: data.slice(0, 100), // Limitar dados para evitar payload muito grande
+          dashboardTitle 
+        }
+      });
+
+      if (error) {
+        console.error('Erro ao chamar Gemini:', error);
+        throw new Error('Erro ao conectar com a IA');
       }
-    }
-    
-    if (userMessage.toLowerCase().includes('média') || userMessage.toLowerCase().includes('average')) {
-      const numericColumns = Object.keys(data[0] || {}).filter(col => 
-        data.slice(0, 10).every(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
-      );
-      
-      if (numericColumns.length > 0) {
-        const averages = numericColumns.map(col => {
-          const values = data.map(row => Number(row[col]) || 0);
-          const avg = values.reduce((a, b) => a + b, 0) / values.length;
-          return `${col}: ${avg.toFixed(2)}`;
-        });
-        return `Médias calculadas:\n${averages.join('\n')}`;
+
+      if (!response.success) {
+        throw new Error(response.error || 'Erro na resposta da IA');
       }
-    }
-    
-    if (userMessage.toLowerCase().includes('maior') || userMessage.toLowerCase().includes('máximo')) {
-      const numericColumns = Object.keys(data[0] || {}).filter(col => 
-        data.slice(0, 10).every(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
-      );
+
+      return response.response;
+    } catch (error) {
+      console.error('Erro na integração Gemini:', error);
       
-      if (numericColumns.length > 0) {
-        const maxValues = numericColumns.map(col => {
-          const values = data.map(row => Number(row[col]) || 0);
-          const max = Math.max(...values);
-          return `${col}: ${max.toLocaleString('pt-BR')}`;
-        });
-        return `Valores máximos:\n${maxValues.join('\n')}`;
+      // Fallback para resposta local em caso de erro
+      if (userMessage.toLowerCase().includes('total') || userMessage.toLowerCase().includes('soma')) {
+        const numericColumns = Object.keys(data[0] || {}).filter(col => 
+          data.slice(0, 10).every(row => !isNaN(Number(row[col])) && row[col] !== '' && row[col] !== null)
+        );
+        
+        if (numericColumns.length > 0) {
+          const totals = numericColumns.map(col => {
+            const sum = data.reduce((acc, row) => acc + (Number(row[col]) || 0), 0);
+            return `${col}: ${sum.toLocaleString('pt-BR')}`;
+          });
+          return `Totais calculados:\n${totals.join('\n')}`;
+        }
       }
+      
+      return `Desculpe, não foi possível conectar com a IA no momento. Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Tente novamente em alguns instantes.`;
     }
-    
-    if (userMessage.toLowerCase().includes('insights') || userMessage.toLowerCase().includes('análise')) {
-      return `Com base nos ${data.length} registros analisados, posso destacar:\n\n• Seu dataset contém informações valiosas\n• Recomendo focar nos indicadores principais\n• Há oportunidades de otimização nos dados\n• As tendências mostram padrões interessantes\n\nPergunta específica sobre algum aspecto dos dados?`;
-    }
-    
-    // Resposta padrão
-    return `Entendi sua pergunta sobre "${userMessage}". Com base nos dados do dashboard "${dashboardTitle}", que contém ${data.length} registros, posso ajudar com análises específicas. Você poderia ser mais específico sobre qual aspecto dos dados gostaria de explorar?`;
   };
 
   const handleSendMessage = async () => {

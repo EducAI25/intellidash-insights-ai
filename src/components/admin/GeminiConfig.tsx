@@ -59,19 +59,41 @@ export function GeminiConfig() {
     setIsTestingConnection(true);
     
     try {
-      // Testar conexão com o Gemini (simulado)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Conexão bem-sucedida!",
-        description: "A API Key do Gemini está funcionando corretamente",
+      // Testar conexão real com Gemini
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: 'Teste de conexão - responda apenas "OK"'
+            }]
+          }]
+        })
       });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: Verifique se a API Key está correta`);
+      }
+
+      const result = await response.json();
       
-      setIsConfigured(true);
+      if (result.candidates && result.candidates[0]) {
+        toast({
+          title: "Conexão bem-sucedida!",
+          description: "A API Key do Gemini está funcionando corretamente",
+        });
+        setIsConfigured(true);
+      } else {
+        throw new Error('Resposta inválida da API');
+      }
     } catch (error) {
+      console.error('Erro ao testar Gemini:', error);
       toast({
         title: "Erro na conexão",
-        description: "Verifique se a API Key está correta",
+        description: error instanceof Error ? error.message : "Verifique se a API Key está correta",
         variant: "destructive"
       });
     } finally {
