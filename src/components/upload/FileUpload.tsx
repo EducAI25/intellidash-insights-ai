@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, FileSpreadsheet, Loader2, CheckCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +38,17 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       return;
     }
 
+    // Validar tamanho do arquivo (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O arquivo deve ter no máximo 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
     setUploadComplete(false);
@@ -52,6 +63,13 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
       let sheets: Sheet[] = [];
       let valid = false;
       let errorMsg = '';
+      
+      // Validar extensão do arquivo
+      const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      if (!allowedExtensions.includes(fileExtension)) {
+        throw new Error('Formato de arquivo não suportado. Use apenas CSV, XLSX ou XLS.');
+      }
       
       if (file.name.endsWith('.csv')) {
         const text = await file.text();
@@ -117,15 +135,18 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
 
       setProgress(60);
 
-      // Upload para Supabase Storage
+      // Upload para Supabase Storage com nome sanitizado
       const uniqueId = uuidv4();
-      const fileName = `${user.id}/${uniqueId}-${file.name}`;
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = `${user.id}/${uniqueId}-${sanitizedFileName}`;
+      
       const { error: uploadError } = await supabase.storage
         .from('dashboard-files')
         .upload(fileName, file, { upsert: false });
 
       if (uploadError) {
-        throw uploadError;
+        console.error('Erro no upload para storage:', uploadError);
+        throw new Error(`Erro no upload: ${uploadError.message}`);
       }
 
       setProgress(80);
@@ -204,7 +225,7 @@ export function FileUpload({ onDataProcessed }: FileUploadProps) {
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
             isDragActive 
-              ? 'border-primary bg-primary-soft' 
+              ? 'border-primary bg-primary/10' 
               : 'border-border hover:border-primary'
           } ${uploading ? 'pointer-events-none opacity-50' : ''}`}
         >

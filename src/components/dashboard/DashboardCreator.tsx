@@ -74,7 +74,7 @@ export function DashboardCreator({
         throw new Error('Nenhum dado foi associado ao dashboard. Tente fazer upload novamente.');
       }
 
-      // Gerar análise inicial da IA
+      // Gerar análise inicial da IA (apenas insights básicos, sem API externa)
       try {
         await supabase.functions.invoke('generate-ai-insights', {
           body: {
@@ -84,6 +84,7 @@ export function DashboardCreator({
         });
       } catch (aiError) {
         console.warn('Erro ao gerar insights da IA:', aiError);
+        // Continua sem análise IA se houver erro
       }
 
       toast({
